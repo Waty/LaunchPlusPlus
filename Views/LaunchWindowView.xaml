@@ -1,0 +1,81 @@
+﻿<Window x:Class="Launch__.Views.LaunchWindowView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:Launch__.ViewModels"
+        xmlns:local="clr-namespace:Launch__.Views"
+        mc:Ignorable="d"
+        Title="Launch++ Lite" Height="300" Width="375" Icon="/Launch++ Lite;component/0210100.ico">
+    <Window.DataContext>
+        <vm:LaunchWindowViewModel></vm:LaunchWindowViewModel>
+    </Window.DataContext>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"></RowDefinition>
+            <RowDefinition Height="6.5*"></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
+            <RowDefinition Height="3.5*"></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
+        </Grid.RowDefinitions>
+       
+        <!-- Add account -->
+        <Expander HorizontalAlignment="Stretch" VerticalAlignment="Top" Header="Add new account" Grid.Row="0" IsExpanded="False">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="3.5*"></ColumnDefinition>
+                    <ColumnDefinition Width="6.5*"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"></RowDefinition>
+                    <RowDefinition Height="Auto"></RowDefinition>
+                    <RowDefinition Height="Auto"></RowDefinition>
+                </Grid.RowDefinitions>
+
+                <Label HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Column="0" Grid.Row="0" Margin="3">Username</Label>
+                <TextBox HorizontalAlignment="Stretch" VerticalAlignment="Center" Grid.Column="1" Grid.Row="0" Margin="3" Text="{Binding NewAccount.Username}"></TextBox>
+
+                <Label HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Column="0" Grid.Row="1" Margin="3">Password</Label>
+                <TextBox HorizontalAlignment="Stretch" VerticalAlignment="Center" Grid.Column="1" Grid.Row="1" Margin="3" Text="{Binding NewAccount.Password}"></TextBox>
+
+                <Button HorizontalAlignment="Stretch" VerticalAlignment="Top" Grid.Row="2" Grid.Column="0" Margin="3" Command="{Binding AddAccountCommand}">Add</Button>
+                <Button HorizontalAlignment="Stretch" VerticalAlignment="Top" Grid.Row="2" Grid.Column="1" Margin="3" Command="{Binding ClearAccountCommand}">Clear</Button>
+            </Grid>
+        </Expander>
+
+        <!-- Accounts list-->
+        <ListBox Grid.Row="1" Margin="3" ItemsSource="{Binding Accounts}" SelectedItem="{Binding SelectedAccount}">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <CheckBox Content="{Binding Username}" IsChecked="{Binding IsQueued}"></CheckBox>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*"></ColumnDefinition>
+                <ColumnDefinition Width="1*"></ColumnDefinition>
+                <ColumnDefinition Width="1*"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Column="0" Margin="3" Command="{Binding StartQueuedLoginsCommand}">Launch</Button>
+            <Button Grid.Column="1" Margin="3" Command="{Binding DeleteAccountCommand}">Delete checked</Button>
+            <Button Grid.Column="2" Margin="3" Command="{Binding ReloadAccountsListCommand}">Reload list</Button>
+        </Grid>
+
+        <ListBox Grid.Row="3" Margin="3" ItemsSource="{Binding Messages}">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding}"></TextBlock>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <!-- Statusbar -->
+        <StatusBar Grid.Row="4">
+            <StatusBarItem Content="{Binding Version}"></StatusBarItem>
+            <StatusBarItem HorizontalAlignment="Right" Content="Created by Razz"></StatusBarItem>
+        </StatusBar>
+    </Grid>
+</Window>
