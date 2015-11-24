@@ -20,7 +20,7 @@ namespace Launch__.ViewModels
         {
             get
             {
-                return "v1.2.2";
+                return "v1.2.3";
             }
         }
 
@@ -87,6 +87,15 @@ namespace Launch__.ViewModels
                         FileName = Path.Combine(Directory.GetCurrentDirectory(), "MapleStory.exe"),
                         Arguments = "-nxl " + token?.Value
                     });
+
+                    if(AutoClosePlayScreen)
+                    {
+                        pStarted.WaitForInputIdle();
+
+                        pStarted.CloseMainWindow();
+                    }
+
+                    item.IsQueued = false;
                 }
                 catch(FileNotFoundException)
                 {

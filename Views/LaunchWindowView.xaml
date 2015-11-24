@@ -6,7 +6,7 @@
         xmlns:vm="clr-namespace:Launch__.ViewModels"
         xmlns:local="clr-namespace:Launch__.Views"
         mc:Ignorable="d"
-        Title="Launch++ Lite" Height="300" Width="375" Icon="/Launch++ Lite;component/0210100.ico">
+        Title="Launch++ Lite" Height="325" Width="375" Icon="/Launch++ Lite;component/0210100.ico">
     <Window.DataContext>
         <vm:LaunchWindowViewModel></vm:LaunchWindowViewModel>
     </Window.DataContext>
@@ -14,6 +14,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"></RowDefinition>
             <RowDefinition Height="6.5*"></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
             <RowDefinition Height="Auto"></RowDefinition>
             <RowDefinition Height="3.5*"></RowDefinition>
             <RowDefinition Height="Auto"></RowDefinition>
@@ -58,13 +59,21 @@
                 <ColumnDefinition Width="1*"></ColumnDefinition>
                 <ColumnDefinition Width="1*"></ColumnDefinition>
             </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"></RowDefinition>
+                <RowDefinition Height="Auto"></RowDefinition>
+            </Grid.RowDefinitions>
 
             <Button Grid.Column="0" Margin="3" Command="{Binding StartQueuedLoginsCommand}">Launch</Button>
             <Button Grid.Column="1" Margin="3" Command="{Binding DeleteAccountCommand}">Delete checked</Button>
             <Button Grid.Column="2" Margin="3" Command="{Binding ReloadAccountsListCommand}">Reload list</Button>
         </Grid>
 
-        <ListBox Grid.Row="3" Margin="3" ItemsSource="{Binding Messages}">
+        <Grid Grid.Row="3" Margin="3">
+            <CheckBox IsChecked="{Binding AutoClosePlayScreen}">Autoclose playscreen</CheckBox>
+        </Grid>
+
+        <ListBox Grid.Row="4" Margin="3" ItemsSource="{Binding Messages}">
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <TextBlock Text="{Binding}"></TextBlock>
@@ -73,7 +82,7 @@
         </ListBox>
 
         <!-- Statusbar -->
-        <StatusBar Grid.Row="4">
+        <StatusBar Grid.Row="5">
             <StatusBarItem Content="{Binding Version}"></StatusBarItem>
             <StatusBarItem HorizontalAlignment="Right" Content="Created by Razz"></StatusBarItem>
         </StatusBar>

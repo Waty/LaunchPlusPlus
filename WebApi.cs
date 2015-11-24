@@ -15,8 +15,23 @@ namespace Launch__
         private const string SessionUrl = "https://passport.nexoneu.com/en/";
         private const string LoginUrl = "https://passport.nexoneu.com/Service/Authentication.asmx/Login";
 
-        private const string UserAgent =
-            "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.2125.104 Safari/537.36";
+        private static string[] UserAgents = new string[]    {
+            "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:42.0) Gecko/20100101 Firefox/42.0",
+            "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; AS; rv:11.0) like Gecko",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246"
+        };
+            
+
+        private static Random random = new Random();
+
+        public static string GetUserAgent
+        {
+            get
+            {
+                return UserAgents.ElementAt(random.Next(0, UserAgents.Length - 1));
+            }
+        }
 
         /// <summary>
         ///     Attempts to login using the Authentication API of MapleStory
@@ -68,7 +83,7 @@ namespace Launch__
             headers.Accept.ParseAdd("application/json, text/javascript, */*; q=0.01");
             headers.AcceptEncoding.ParseAdd("gzip,deflate");
             headers.AcceptLanguage.ParseAdd("en-GB,en-us;q=0.8,en;q=0.6");
-            headers.UserAgent.ParseAdd(UserAgent);
+            headers.UserAgent.ParseAdd(GetUserAgent);
             headers.Connection.TryParseAdd("keep-alive");
             headers.Host = new Uri(LoginUrl).Host;
             headers.Add("X-Requested-With", "XMLHttpRequest");
