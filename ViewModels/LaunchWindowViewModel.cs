@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -21,6 +20,7 @@ namespace Launch__.ViewModels
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Launch++");
 
         private AccountInfoModel _newAccount = new AccountInfoModel();
+
         public AccountInfoModel NewAccount
         {
             get { return _newAccount; }
@@ -48,11 +48,14 @@ namespace Launch__.ViewModels
         {
             foreach (var item in Accounts.Where(x => x.IsQueued))
             {
-                var passport = await GetPassportAsync(item).ConfigureAwait(true);
-
-                if (passport == null)
+                string passport;
+                try
                 {
-                    Messages.Add($"[Error] Failed to start grab login token for {item.Username}");
+                    passport = await GetPassportAsync(item).ConfigureAwait(true);
+                }
+                catch (Exception e)
+                {
+                    Messages.Add($"[{item.Username}] Failed to grab login token: {e.Message}");
                     return;
                 }
 
@@ -68,21 +71,10 @@ namespace Launch__.ViewModels
 
                     Messages.Add($"[{item.Username}] Successfully started MapleStory");
                 }
-                catch (FileNotFoundException)
+                catch (Exception e)
                 {
-                    Messages.Add($"[{item.Username}] Failed to locate MapleStory.exe");
-                }
-                catch (InvalidOperationException)
-                {
-                    Messages.Add($"[{item.Username}] Failed to locate MapleStory.exe");
-                }
-                catch (Win32Exception)
-                {
-                    Messages.Add($"[{item.Username}] Failed to locate MapleStory.exe");
-                }
-                catch
-                {
-                    Messages.Add($"[{item.Username}] Failed to start MapleStory due to an unknown error");
+                    Messages.Add($"[{item.Username}] Failed to start MapleStory.exe:");
+                    Messages.Add(e.Message);
                 }
             }
         }
