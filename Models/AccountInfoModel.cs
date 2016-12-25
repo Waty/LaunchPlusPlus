@@ -4,11 +4,11 @@ namespace Launch__.Models
 {
     public class AccountInfoModel : BindableBase
     {
-        private string _username;
-        public string Username
+        private string _email;
+        public string Email
         {
-            get { return _username; }
-            set { SetProperty(ref _username, value); }
+            get { return _email; }
+            set { SetProperty(ref _email, value); }
         }
 
         private string _password;
@@ -16,13 +16,6 @@ namespace Launch__.Models
         {
             get { return _password; }
             set { SetProperty(ref _password, value); }
-        }
-
-        private string _pic;
-        public string Pic
-        {
-            get { return _pic; }
-            set { SetProperty(ref _pic, value); }
         }
     }
 }

@@ -1,91 +1,97 @@
 ﻿using System;
-using System.Diagnostics;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace Launch__
 {
-    internal class WebApi
+    public class NexonToken
     {
-        private const string SessionUrl = "https://passport.nexoneu.com/en/";
-        private const string LoginUrl = "https://passport.nexoneu.com/Service/Authentication.asmx/Login";
+        public string Token { get; set; }
+        public DateTime ExpirationDate { get; set; }
+        public string RefreshToken { get; set; }
+    }
 
-        private static string[] _userAgents = new string[]    {
-            "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36",
-            "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:42.0) Gecko/20100101 Firefox/42.0",
-            "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; AS; rv:11.0) like Gecko",
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246"
-        };
-            
+    public static class WebApi
+    {
+        private const string LoginUrl = "https://api.nexon.net/auth/login";
+        private static readonly Uri BaseUri = new Uri("https://api.nexon.net");
 
-        private static Random _random = new Random();
-
-        public static string GetUserAgent
+        static WebApi()
         {
-            get
+            JsonConvert.DefaultSettings = () => new JsonSerializerSettings
             {
-                return _userAgents.ElementAt(_random.Next(0, _userAgents.Length - 1));
-            }
-        }
-
-        /// <summary>
-        ///     Attempts to login using the Authentication API of MapleStory
-        /// </summary>
-        /// <param name="userId">The userId thats used to authenticate</param>
-        /// <param name="password">The password that's used to authenticate</param>
-        /// <returns>Return the AuthCookie set by the API</returns>
-        /// <exception cref="Exception">The API failed to respond, or there is no AuthCookie received</exception>
-        public static async Task<Cookie> LoginAsync(string userId, string password)
-        {
-            try
-            {
-                var handler = new HttpClientHandler { UseCookies = true };
-                using (var c = new HttpClient(handler))
+                ContractResolver = new CamelCasePropertyNamesContractResolver
                 {
-                    SetHeaders(c.DefaultRequestHeaders);
-
-
-                    HttpResponseMessage response = await c.GetAsync(new Uri(SessionUrl));
-                    response.EnsureSuccessStatusCode();
-
-                    string json = String.Format("{{\"account\":{{\"userId\":\"{0}\",\"password\":\"{1}\",\"accessedGame\":\"maplestory\",\"captcha\":\"\",\"isSaveID\":false}}}}", userId, password);
-
-                    var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-                    response = await c.PostAsync(new Uri(LoginUrl), content);
-                    response.EnsureSuccessStatusCode();
-
-                    return handler.CookieContainer.GetCookies(response.RequestMessage.RequestUri)
-                        .Cast<Cookie>()
-                        .FirstOrDefault(cookie => cookie.Name.Equals("NPP", StringComparison.CurrentCultureIgnoreCase));
+                    NamingStrategy = new SnakeCaseNamingStrategy()
                 }
-            }
-            catch (Exception e)
+            };
+        }
+
+        public static Task<NexonToken> RefreshToken(NexonToken token)
+        {
+            return Login(new {token.RefreshToken, AllowUnverified = true});
+        }
+
+        public static Task<NexonToken> Login(string email, string password)
+        {
+            return Login(new {UserId = email, UserPw = password, AllowUnverified = true});
+        }
+
+        private static async Task<NexonToken> Login(object data)
+        {
+            var filter = new HttpClientHandler();
+            using (var c = new HttpClient(filter))
             {
-                Debug.WriteLine("Exception in LoginAsync:\n{0}", e);
-                throw;
+                c.DefaultRequestHeaders.UserAgent.ParseAdd("NexonLauncher.nxl-16.10.03-150-6b2c4c1");
+
+                string json = JsonConvert.SerializeObject(data);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                HttpResponseMessage response = await c.PostAsync(new Uri(LoginUrl), content).ConfigureAwait(false);
+                response.EnsureSuccessStatusCode();
+                string responseStr = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var result = JsonConvert.DeserializeAnonymousType(responseStr, new
+                {
+                    Token = "",
+                    RefreshToken = "",
+                    AuthToken = "",
+                    ExpiresIn = 0,
+                    Error = ""
+                });
+
+                return new NexonToken
+                {
+                    RefreshToken = result.RefreshToken,
+                    ExpirationDate = DateTime.Now.AddSeconds(result.ExpiresIn),
+                    Token = result.Token
+                };
             }
         }
 
-        /// <summary>
-        ///     Resets the headers to make any request to the Nexon Api look legit
-        /// </summary>
-        /// <param name="headers">The <see cref="HttpRequestHeaderCollection" /> that gets modified</param>
-        private static void SetHeaders(HttpRequestHeaders headers)
+        public static async Task<TResult> GetApi<TResult>(Uri uri, string token, TResult result)
         {
-            headers.Clear();
+            var filter = new HttpClientHandler();
+            using (var c = new HttpClient(filter))
+            {
+                c.DefaultRequestHeaders.UserAgent.ParseAdd("NexonLauncher.nxl-16.10.03-150-6b2c4c1");
+                c.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer",
+                    Convert.ToBase64String(Encoding.UTF8.GetBytes(token)));
+                filter.CookieContainer.Add(BaseUri, new Cookie("nxtk", token) {Domain = ".nexon.net", Path = "/"});
 
-            headers.Accept.ParseAdd("application/json, text/javascript, */*; q=0.01");
-            headers.AcceptEncoding.ParseAdd("gzip,deflate");
-            headers.AcceptLanguage.ParseAdd("en-GB,en-us;q=0.8,en;q=0.6");
-            headers.UserAgent.ParseAdd(GetUserAgent);
-            headers.Connection.TryParseAdd("keep-alive");
-            headers.Host = new Uri(LoginUrl).Host;
-            headers.Add("X-Requested-With", "XMLHttpRequest");
+                string s = await c.GetStringAsync(uri).ConfigureAwait(false);
+                return JsonConvert.DeserializeAnonymousType(s, result);
+            }
+        }
+
+        public static async Task<string> GetPassport(string token)
+        {
+            var desc = new {AuthToken = "", Passport = "", UserNo = 0};
+            var res = await GetApi(new Uri(BaseUri, "/users/me/passport"), token, desc).ConfigureAwait(false);
+            return res.Passport;
         }
     }
 }

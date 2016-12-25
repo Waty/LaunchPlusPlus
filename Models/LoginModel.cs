@@ -11,11 +11,11 @@ namespace Launch__.Models
             set { SetProperty(ref _username, value); }
         }
 
-        private string _password;
-        public string Password
+        private NexonToken _nexonToken;
+        public NexonToken NexonToken
         {
-            get { return _password; }
-            set { SetProperty(ref _password, value); }
+            get { return _nexonToken; }
+            set { SetProperty(ref _nexonToken, value); }
         }
 
         private bool _isQueued;

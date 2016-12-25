@@ -4,7 +4,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net;
+using System.Threading.Tasks;
 using System.Windows.Input;
 using Launch__.Models;
 using Microsoft.Practices.Prism.Commands;
@@ -20,8 +20,8 @@ namespace Launch__.ViewModels
         private static readonly string AccFolder =
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Launch++");
 
-        private LoginModel _newAccount = new LoginModel();
-        public LoginModel NewAccount
+        private AccountInfoModel _newAccount = new AccountInfoModel();
+        public AccountInfoModel NewAccount
         {
             get { return _newAccount; }
             set { SetProperty(ref _newAccount, value); }
@@ -48,9 +48,9 @@ namespace Launch__.ViewModels
         {
             foreach (var item in Accounts.Where(x => x.IsQueued))
             {
-                Cookie token = await WebApi.LoginAsync(item.Username, item.Password).ConfigureAwait(true);
+                var passport = await GetPassportAsync(item).ConfigureAwait(true);
 
-                if (token == null)
+                if (passport == null)
                 {
                     Messages.Add($"[Error] Failed to start grab login token for {item.Username}");
                     return;
@@ -61,7 +61,7 @@ namespace Launch__.ViewModels
                     Process.Start(new ProcessStartInfo
                     {
                         FileName = Path.Combine(Directory.GetCurrentDirectory(), "MapleStory.exe"),
-                        Arguments = "-nxl " + token.Value
+                        Arguments = "-nxl " + passport
                     });
 
                     item.IsQueued = false;
@@ -87,6 +87,18 @@ namespace Launch__.ViewModels
             }
         }
 
+        private async Task<string> GetPassportAsync(LoginModel item)
+        {
+            // if token is expired, refresh it
+            if (item.NexonToken.ExpirationDate < DateTime.Now)
+            {
+                item.NexonToken = await WebApi.RefreshToken(item.NexonToken).ConfigureAwait(false);
+                await SaveLoginModel(item).ConfigureAwait(false);
+            }
+
+            return await WebApi.GetPassport(item.NexonToken.Token).ConfigureAwait(false);
+        }
+
         public ICommand ReloadAccountsListCommand { get; set; }
 
         private async void ReloadAccountsListAction()
@@ -109,16 +121,27 @@ namespace Launch__.ViewModels
 
         private async void AddAccountAction()
         {
-            var filePath = Path.Combine(AccFolder, $"{NewAccount.Username}.json");
-            using (var fs = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write))
-            using (var sw = new StreamWriter(fs))
+            var token = await WebApi.Login(NewAccount.Email, NewAccount.Password).ConfigureAwait(true);
+            var loginModel = new LoginModel
             {
-                var json = JsonConvert.SerializeObject(NewAccount);
-                await sw.WriteAsync(json).ConfigureAwait(true);
-            }
+                Username = NewAccount.Email,
+                NexonToken = token
+            };
 
+            await SaveLoginModel(loginModel).ConfigureAwait(true);
             ClearAddAccountAction();
             ReloadAccountsListAction();
+        }
+
+        private async Task SaveLoginModel(LoginModel model)
+        {
+            var filePath = Path.Combine(AccFolder, $"{model.Username}.json");
+            using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+            using (var sw = new StreamWriter(fs))
+            {
+                var json = JsonConvert.SerializeObject(model);
+                await sw.WriteAsync(json).ConfigureAwait(true);
+            }
         }
 
         public ICommand DeleteAccountCommand { get; set; }
@@ -139,7 +162,7 @@ namespace Launch__.ViewModels
 
         private void ClearAddAccountAction()
         {
-            NewAccount = new LoginModel();
+            NewAccount = new AccountInfoModel();
         }
     }
 }

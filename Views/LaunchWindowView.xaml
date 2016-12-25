@@ -32,8 +32,8 @@
                     <RowDefinition Height="Auto"></RowDefinition>
                 </Grid.RowDefinitions>
 
-                <Label HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Column="0" Grid.Row="0" Margin="3">Username</Label>
-                <TextBox HorizontalAlignment="Stretch" VerticalAlignment="Center" Grid.Column="1" Grid.Row="0" Margin="3" Text="{Binding NewAccount.Username}"></TextBox>
+                <Label HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Column="0" Grid.Row="0" Margin="3">Email</Label>
+                <TextBox HorizontalAlignment="Stretch" VerticalAlignment="Center" Grid.Column="1" Grid.Row="0" Margin="3" Text="{Binding NewAccount.Email}"></TextBox>
 
                 <Label HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Column="0" Grid.Row="1" Margin="3">Password</Label>
                 <TextBox HorizontalAlignment="Stretch" VerticalAlignment="Center" Grid.Column="1" Grid.Row="1" Margin="3" Text="{Binding NewAccount.Password}"></TextBox>
