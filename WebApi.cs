@@ -21,16 +21,13 @@ namespace Launch__
         private const string LoginUrl = "https://api.nexon.net/auth/login";
         private static readonly Uri BaseUri = new Uri("https://api.nexon.net");
 
-        static WebApi()
+        private static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings
         {
-            JsonConvert.DefaultSettings = () => new JsonSerializerSettings
+            ContractResolver = new CamelCasePropertyNamesContractResolver
             {
-                ContractResolver = new CamelCasePropertyNamesContractResolver
-                {
-                    NamingStrategy = new SnakeCaseNamingStrategy()
-                }
-            };
-        }
+                NamingStrategy = new SnakeCaseNamingStrategy()
+            }
+        };
 
         public static Task<NexonToken> RefreshToken(NexonToken token)
         {
@@ -49,7 +46,7 @@ namespace Launch__
             {
                 c.DefaultRequestHeaders.UserAgent.ParseAdd("NexonLauncher.nxl-16.10.03-150-6b2c4c1");
 
-                string json = JsonConvert.SerializeObject(data);
+                string json = JsonConvert.SerializeObject(data, JsonSettings);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
                 HttpResponseMessage response = await c.PostAsync(new Uri(LoginUrl), content).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
@@ -61,7 +58,7 @@ namespace Launch__
                     AuthToken = "",
                     ExpiresIn = 0,
                     Error = ""
-                });
+                }, JsonSettings);
 
                 return new NexonToken
                 {
@@ -83,7 +80,7 @@ namespace Launch__
                 filter.CookieContainer.Add(BaseUri, new Cookie("nxtk", token) {Domain = ".nexon.net", Path = "/"});
 
                 string s = await c.GetStringAsync(uri).ConfigureAwait(false);
-                return JsonConvert.DeserializeAnonymousType(s, result);
+                return JsonConvert.DeserializeAnonymousType(s, result, JsonSettings);
             }
         }
 
