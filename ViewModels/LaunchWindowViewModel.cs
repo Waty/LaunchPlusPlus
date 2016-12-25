@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Threading.Tasks;
 using System.Windows.Input;
 using Launch__.Models;
 using Microsoft.Practices.Prism.Commands;
@@ -18,25 +17,14 @@ namespace Launch__.ViewModels
     {
         public string Version => "v1.2.3";
 
-        private LoginModel _selectedAccount;
-        public LoginModel SelectedAccount
-        {
-            get { return _selectedAccount; }
-            set { SetProperty(ref _selectedAccount, value); }
-        }
+        private static readonly string AccFolder =
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Launch++");
 
         private LoginModel _newAccount = new LoginModel();
         public LoginModel NewAccount
         {
             get { return _newAccount; }
             set { SetProperty(ref _newAccount, value); }
-        }
-
-        private bool _autoClosePlayScreen;
-        public bool AutoClosePlayScreen
-        {
-            get { return _autoClosePlayScreen; }
-            set { SetProperty(ref _autoClosePlayScreen, value); }
         }
 
         public ObservableCollection<LoginModel> Accounts { get; } = new ObservableCollection<LoginModel>();
@@ -48,7 +36,7 @@ namespace Launch__.ViewModels
             StartQueuedLoginsCommand = new DelegateCommand(StartQueuedLoginsAction);
             ReloadAccountsListCommand = new DelegateCommand(ReloadAccountsListAction);
             AddAccountCommand = new DelegateCommand(AddAccountAction);
-            ClearAccountCommand = new DelegateCommand(ClearAccountAction);
+            ClearAccountCommand = new DelegateCommand(ClearAddAccountAction);
             DeleteAccountCommand = new DelegateCommand(DeleteAccountAction);
 
             ReloadAccountsListAction();
@@ -60,52 +48,42 @@ namespace Launch__.ViewModels
         {
             foreach (var item in Accounts.Where(x => x.IsQueued))
             {
-                Cookie token = await WebApi.LoginAsync(item?.Username, item?.Password);
+                Cookie token = await WebApi.LoginAsync(item.Username, item.Password).ConfigureAwait(true);
 
                 if (token == null)
                 {
-                    Messages.Add($"[Error] Failed to start grab login token for {item?.Username}");
+                    Messages.Add($"[Error] Failed to start grab login token for {item.Username}");
                     return;
                 }
 
                 try
                 {
-                    Process pStarted = Process.Start(new ProcessStartInfo
+                    Process.Start(new ProcessStartInfo
                     {
                         FileName = Path.Combine(Directory.GetCurrentDirectory(), "MapleStory.exe"),
                         Arguments = "-nxl " + token.Value
                     });
 
-                    if (AutoClosePlayScreen)
-                    {
-                        pStarted.WaitForInputIdle();
-                        pStarted.CloseMainWindow();
-                    }
-
                     item.IsQueued = false;
+
+                    Messages.Add($"[{item.Username}] Successfully started MapleStory");
                 }
                 catch (FileNotFoundException)
                 {
                     Messages.Add($"[{item.Username}] Failed to locate MapleStory.exe");
-                    return;
                 }
                 catch (InvalidOperationException)
                 {
                     Messages.Add($"[{item.Username}] Failed to locate MapleStory.exe");
-                    return;
                 }
                 catch (Win32Exception)
                 {
                     Messages.Add($"[{item.Username}] Failed to locate MapleStory.exe");
-                    return;
                 }
                 catch
                 {
                     Messages.Add($"[{item.Username}] Failed to start MapleStory due to an unknown error");
-                    return;
                 }
-
-                Messages.Add($"[{item.Username}] Successfully started MapleStory");
             }
         }
 
@@ -115,18 +93,13 @@ namespace Launch__.ViewModels
         {
             Accounts.Clear();
 
-            string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Launch++");
-
-            DirectoryInfo folder = new DirectoryInfo(path);
-
+            var folder = new DirectoryInfo(AccFolder);
             foreach (var file in folder.EnumerateFiles("*.json"))
             {
                 using (var stream = file.OpenText())
                 {
-                    string js = await stream.ReadToEndAsync();
-
-                    LoginModel model = await Task.Factory.StartNew(() => JsonConvert.DeserializeObject<LoginModel>(js));
-
+                    var json = await stream.ReadToEndAsync().ConfigureAwait(true);
+                    var model = JsonConvert.DeserializeObject<LoginModel>(json);
                     Accounts.Add(model);
                 }
             }
@@ -136,18 +109,15 @@ namespace Launch__.ViewModels
 
         private async void AddAccountAction()
         {
-            string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Launch++");
-
-            string js = JsonConvert.SerializeObject(NewAccount);
-
-            using (FileStream fs = new FileStream(Path.Combine(path, $"{NewAccount.Username}.json"), FileMode.CreateNew, FileAccess.Write))
-            using (StreamWriter sw = new StreamWriter(fs))
+            var filePath = Path.Combine(AccFolder, $"{NewAccount.Username}.json");
+            using (var fs = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write))
+            using (var sw = new StreamWriter(fs))
             {
-                await sw.WriteAsync(js);
+                var json = JsonConvert.SerializeObject(NewAccount);
+                await sw.WriteAsync(json).ConfigureAwait(true);
             }
 
-            ClearAccountAction();
-
+            ClearAddAccountAction();
             ReloadAccountsListAction();
         }
 
@@ -155,19 +125,19 @@ namespace Launch__.ViewModels
 
         private void DeleteAccountAction()
         {
-            string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Launch++", SelectedAccount?.Username + ".json");
-
-            if (File.Exists(path))
-                File.Delete(path);
-            else
-                Messages.Add($"Failed to delete the account {SelectedAccount?.Username}");
+            foreach (var acc in Accounts.Where(model => model.IsQueued))
+            {
+                var filePath = Path.Combine(AccFolder, $"{acc.Username}.json");
+                if (File.Exists(filePath)) File.Delete(filePath);
+                else Messages.Add($"Failed to delete the account '{acc.Username}' (unable to find file)");
+            }
 
             ReloadAccountsListAction();
         }
 
         public ICommand ClearAccountCommand { get; set; }
 
-        private void ClearAccountAction()
+        private void ClearAddAccountAction()
         {
             NewAccount = new LoginModel();
         }

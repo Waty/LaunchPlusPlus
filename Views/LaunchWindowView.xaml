@@ -15,7 +15,6 @@
             <RowDefinition Height="Auto"></RowDefinition>
             <RowDefinition Height="6.5*"></RowDefinition>
             <RowDefinition Height="Auto"></RowDefinition>
-            <RowDefinition Height="Auto"></RowDefinition>
             <RowDefinition Height="3.5*"></RowDefinition>
             <RowDefinition Height="Auto"></RowDefinition>
         </Grid.RowDefinitions>
@@ -45,7 +44,7 @@
         </Expander>
 
         <!-- Accounts list-->
-        <ListBox Grid.Row="1" Margin="3" ItemsSource="{Binding Accounts}" SelectedItem="{Binding SelectedAccount}">
+        <ListBox Grid.Row="1" Margin="3" ItemsSource="{Binding Accounts}">
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <CheckBox Content="{Binding Username}" IsChecked="{Binding IsQueued}"></CheckBox>
@@ -69,11 +68,7 @@
             <Button Grid.Column="2" Margin="3" Command="{Binding ReloadAccountsListCommand}">Reload list</Button>
         </Grid>
 
-        <Grid Grid.Row="3" Margin="3">
-            <CheckBox IsChecked="{Binding AutoClosePlayScreen}">Autoclose playscreen</CheckBox>
-        </Grid>
-
-        <ListBox Grid.Row="4" Margin="3" ItemsSource="{Binding Messages}">
+        <ListBox Grid.Row="3" Margin="3" ItemsSource="{Binding Messages}">
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <TextBlock Text="{Binding}"></TextBlock>
@@ -82,7 +77,7 @@
         </ListBox>
 
         <!-- Statusbar -->
-        <StatusBar Grid.Row="5">
+        <StatusBar Grid.Row="4">
             <StatusBarItem Content="{Binding Version}"></StatusBarItem>
             <StatusBarItem HorizontalAlignment="Right" Content="Created by Razz"></StatusBarItem>
         </StatusBar>
