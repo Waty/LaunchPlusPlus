@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
@@ -15,7 +14,7 @@ namespace Launch__
         private const string SessionUrl = "https://passport.nexoneu.com/en/";
         private const string LoginUrl = "https://passport.nexoneu.com/Service/Authentication.asmx/Login";
 
-        private static string[] UserAgents = new string[]    {
+        private static string[] _userAgents = new string[]    {
             "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36",
             "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:42.0) Gecko/20100101 Firefox/42.0",
             "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; AS; rv:11.0) like Gecko",
@@ -23,13 +22,13 @@ namespace Launch__
         };
             
 
-        private static Random random = new Random();
+        private static Random _random = new Random();
 
         public static string GetUserAgent
         {
             get
             {
-                return UserAgents.ElementAt(random.Next(0, UserAgents.Length - 1));
+                return _userAgents.ElementAt(_random.Next(0, _userAgents.Length - 1));
             }
         }
 

@@ -16,47 +16,35 @@ namespace Launch__.ViewModels
 {
     public class LaunchWindowViewModel : BindableBase
     {
-        public string Version
-        {
-            get
-            {
-                return "v1.2.3";
-            }
-        }
+        public string Version => "v1.2.3";
 
-        private LoginModel _SelectedAccount;
-
+        private LoginModel _selectedAccount;
         public LoginModel SelectedAccount
         {
-            get { return _SelectedAccount; }
-            set { _SelectedAccount = value; OnPropertyChanged(nameof(SelectedAccount)); }
+            get { return _selectedAccount; }
+            set { SetProperty(ref _selectedAccount, value); }
         }
 
-        private LoginModel _NewAccount;
-
+        private LoginModel _newAccount = new LoginModel();
         public LoginModel NewAccount
         {
-            get { return _NewAccount; }
-            set { _NewAccount = value; OnPropertyChanged(nameof(NewAccount)); }
+            get { return _newAccount; }
+            set { SetProperty(ref _newAccount, value); }
         }
 
-        private bool _AutoClosePlayScreen;
+        private bool _autoClosePlayScreen;
         public bool AutoClosePlayScreen
         {
-            get { return _AutoClosePlayScreen;}
-            set { _AutoClosePlayScreen = value; OnPropertyChanged(nameof(AutoClosePlayScreen)); }
+            get { return _autoClosePlayScreen; }
+            set { SetProperty(ref _autoClosePlayScreen, value); }
         }
 
-        public ObservableCollection<LoginModel> Accounts { get; set; }
+        public ObservableCollection<LoginModel> Accounts { get; } = new ObservableCollection<LoginModel>();
 
-        public ObservableCollection<string> Messages { get; set; }
+        public ObservableCollection<string> Messages { get; } = new ObservableCollection<string>();
 
         public LaunchWindowViewModel()
         {
-            Accounts = new ObservableCollection<LoginModel>();
-            Messages = new ObservableCollection<string>();
-            NewAccount = new LoginModel();
-
             StartQueuedLoginsCommand = new DelegateCommand(StartQueuedLoginsAction);
             ReloadAccountsListCommand = new DelegateCommand(ReloadAccountsListAction);
             AddAccountCommand = new DelegateCommand(AddAccountAction);
@@ -66,15 +54,15 @@ namespace Launch__.ViewModels
             ReloadAccountsListAction();
         }
 
-        public ICommand StartQueuedLoginsCommand { get; set; }
+        public ICommand StartQueuedLoginsCommand { get; }
 
         private async void StartQueuedLoginsAction()
         {
-            foreach(var item in Accounts.Where(x => x.IsQueued == true))
+            foreach (var item in Accounts.Where(x => x.IsQueued))
             {
                 Cookie token = await WebApi.LoginAsync(item?.Username, item?.Password);
 
-                if(token == null)
+                if (token == null)
                 {
                     Messages.Add($"[Error] Failed to start grab login token for {item?.Username}");
                     return;
@@ -85,40 +73,39 @@ namespace Launch__.ViewModels
                     Process pStarted = Process.Start(new ProcessStartInfo
                     {
                         FileName = Path.Combine(Directory.GetCurrentDirectory(), "MapleStory.exe"),
-                        Arguments = "-nxl " + token?.Value
+                        Arguments = "-nxl " + token.Value
                     });
 
-                    if(AutoClosePlayScreen)
+                    if (AutoClosePlayScreen)
                     {
                         pStarted.WaitForInputIdle();
-
                         pStarted.CloseMainWindow();
                     }
 
                     item.IsQueued = false;
                 }
-                catch(FileNotFoundException)
+                catch (FileNotFoundException)
                 {
-                    Messages.Add($"[{item?.Username}] Failed to locate MapleStory.exe");
+                    Messages.Add($"[{item.Username}] Failed to locate MapleStory.exe");
                     return;
                 }
                 catch (InvalidOperationException)
                 {
-                    Messages.Add($"[{item?.Username}] Failed to locate MapleStory.exe");
+                    Messages.Add($"[{item.Username}] Failed to locate MapleStory.exe");
                     return;
                 }
                 catch (Win32Exception)
                 {
-                    Messages.Add($"[{item?.Username}] Failed to locate MapleStory.exe");
+                    Messages.Add($"[{item.Username}] Failed to locate MapleStory.exe");
                     return;
                 }
                 catch
                 {
-                    Messages.Add($"[{item?.Username}] Failed to start MapleStory due to an unknown error");
+                    Messages.Add($"[{item.Username}] Failed to start MapleStory due to an unknown error");
                     return;
                 }
 
-                Messages.Add($"[{item?.Username}] Successfully started MapleStory");
+                Messages.Add($"[{item.Username}] Successfully started MapleStory");
             }
         }
 
@@ -132,7 +119,7 @@ namespace Launch__.ViewModels
 
             DirectoryInfo folder = new DirectoryInfo(path);
 
-            foreach(var file in folder.EnumerateFiles("*.json"))
+            foreach (var file in folder.EnumerateFiles("*.json"))
             {
                 using (var stream = file.OpenText())
                 {
@@ -151,15 +138,15 @@ namespace Launch__.ViewModels
         {
             string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Launch++");
 
-            string js = await Task.Factory.StartNew(() => JsonConvert.SerializeObject(NewAccount));
+            string js = JsonConvert.SerializeObject(NewAccount);
 
-            using (FileStream fs = new FileStream(Path.Combine(path, $"{NewAccount.Username}.json"), FileMode.Create, FileAccess.Write))
+            using (FileStream fs = new FileStream(Path.Combine(path, $"{NewAccount.Username}.json"), FileMode.CreateNew, FileAccess.Write))
             using (StreamWriter sw = new StreamWriter(fs))
             {
                 await sw.WriteAsync(js);
             }
 
-            NewAccount = new LoginModel();
+            ClearAccountAction();
 
             ReloadAccountsListAction();
         }

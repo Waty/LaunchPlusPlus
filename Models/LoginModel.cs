@@ -1,33 +1,28 @@
 ﻿using Microsoft.Practices.Prism.Mvvm;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Launch__.Models
 {
     public class LoginModel : BindableBase
     {
-        private string _Username;
+        private string _username;
         public string Username
         {
-            get { return _Username; }
-            set { _Username = value; OnPropertyChanged(nameof(Username)); }
+            get { return _username; }
+            set { SetProperty(ref _username, value); }
         }
 
-        private string _Password;
+        private string _password;
         public string Password
         {
-            get { return _Password; }
-            set { _Password = value; OnPropertyChanged(nameof(Password)); }
+            get { return _password; }
+            set { SetProperty(ref _password, value); }
         }
 
-        private bool _IsQueued;
+        private bool _isQueued;
         public bool IsQueued
         {
-            get { return _IsQueued; }
-            set { _IsQueued = value; OnPropertyChanged(nameof(IsQueued)); }
+            get { return _isQueued; }
+            set { SetProperty(ref _isQueued, value); }
         }
     }
 }
